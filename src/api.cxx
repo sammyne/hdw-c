@@ -3,19 +3,20 @@
 #include <cstring>
 #include <memory>
 
-#include <mbedtls/bignum.h>
 #include <mbedtls/ecp.h>
 
 #include "encoding.h"
 #include "errors.h"
 #include "hmac.h"
+#include "math.h"
 
 using std::pair;
 using std::shared_ptr;
 using std::tuple;
 
 using Group = shared_ptr<mbedtls_ecp_group>;
-using BigInt = shared_ptr<mbedtls_mpi>;
+
+using math::BigInt;
 
 const uint32_t SEED_LEN_MIN = 16;
 const uint32_t SEED_LEN_MAX = 64;
@@ -26,8 +27,6 @@ const int LEN_CHILD_INDEX = 4;
 const int LEN_PUBKEY = 33;
 
 // forward declaration
-pair<BigInt, int> big_int_new(const uint8_t d[32] = nullptr);
-int big_int_serialize(uint8_t out[32], const BigInt x);
 pair<BigInt, int> curve_add(const Group grp, const BigInt x, const BigInt y);
 int derive_compressed_public_key(uint8_t out[LEN_PUBKEY], Group grp, const BigInt d);
 pair<Group, int> new_group(CURVE curve);
@@ -120,7 +119,7 @@ int bip32_privkey_child(PrivKey *child, const PrivKey *parent, uint32_t idx)
     return err2;
   }
 
-  auto [d, err3] = big_int_new(parent->priv);
+  auto [d, err3] = math::big_int_new(parent->priv);
   if (err3)
   {
     return err3;
@@ -131,7 +130,7 @@ int bip32_privkey_child(PrivKey *child, const PrivKey *parent, uint32_t idx)
   {
     return err4;
   }
-  else if (auto err = big_int_serialize(child->priv, dd); err)
+  else if (auto err = math::big_int_serialize(child->priv, dd); err)
   {
     return err;
   }
@@ -175,7 +174,7 @@ int bip32_privkey_deserialize(PrivKey *priv, const uint8_t buf[70])
   memcpy(priv->priv, buf + o, 32);
   o += 32;
 
-  auto [d, err2] = big_int_new(priv->priv);
+  auto [d, err2] = math::big_int_new(priv->priv);
   if (err2)
   {
     return err2;
@@ -206,40 +205,16 @@ void bip32_privkey_serialize(uint8_t buf[70], const PrivKey *priv)
 }
 
 // internal
-pair<BigInt, int> big_int_new(const uint8_t d[32])
-{
-  auto *n = new mbedtls_mpi;
-  mbedtls_mpi_init(n);
-
-  BigInt out(n, [](mbedtls_mpi *v) {
-    mbedtls_mpi_free(v);
-    delete v;
-  });
-
-  if (!d)
-  {
-    return std::make_pair(out, 0);
-  }
-
-  auto err = mbedtls_mpi_read_binary(out.get(), d, 32);
-
-  return std::make_pair(out, err);
-}
-
-int big_int_serialize(uint8_t out[32], const BigInt x)
-{
-  return mbedtls_mpi_write_binary(x.get(), out, 32);
-}
 
 pair<BigInt, int> curve_add(const Group grp, const BigInt x, const BigInt y)
 {
-  auto [sum, _] = big_int_new();
+  auto [sum, _] = math::big_int_new();
   if (auto err = mbedtls_mpi_add_mpi(sum.get(), x.get(), y.get()); err)
   {
     return std::make_pair(sum, err);
   }
 
-  auto [out, _2] = big_int_new();
+  auto [out, _2] = math::big_int_new();
   auto err = mbedtls_mpi_mod_mpi(out.get(), sum.get(), &(grp->N));
 
   return std::make_pair(out, err);
@@ -307,7 +282,7 @@ pair<Group, int> new_group(CURVE curve)
 
 pair<BigInt, int> to_usable_api(Group grp, const uint8_t d[32])
 {
-  auto [out, err] = big_int_new(d);
+  auto [out, err] = math::big_int_new(d);
   if (err)
   {
     return std::make_pair(out, err);

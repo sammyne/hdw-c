@@ -6,6 +6,8 @@
 extern "C"
 {
 #endif
+
+  // CURVE 定义支持的曲线类型。
   enum CURVE
   {
     Unknown = 0,
@@ -13,11 +15,10 @@ extern "C"
     secp256r1,
   };
 
-  // version isn't needed
+  // PrivKey 表示私钥。
   typedef struct
   {
-    // @TODO: curve_type
-    CURVE curve;
+    CURVE curve;            // 底层的椭圆曲线类型
     uint8_t depth;          // 当前私钥的层次，根为 0，根的下一级为 1，依此类推，最大为 255
     uint32_t index;         // 当前父私钥派生当前私钥的路径索引
     uint8_t chain_code[32]; // 派生链路索引

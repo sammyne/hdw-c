@@ -18,6 +18,10 @@ cmake -DENABLE_TESTING=1 ..
 make -j
 ```
 
+## 项目介绍
+
+核心 API 参见 [api.h](./include/hdw/api.h)。
+
 ## 注意事项
 - [zdyszm/coinaddress] 实现的 HMAC512 有 bug。
 

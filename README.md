@@ -22,6 +22,12 @@ make -j
 
 核心 API 参见 [api.h](./include/hdw/api.h)。
 
+## 示例
+
+示例 | 源文件 | 描述
+----|-------|------
+ckd | [main.cxx](./examples/ckd/main.cxx) | 私钥派生
+
 ## 注意事项
 - [zdyszm/coinaddress] 实现的 HMAC512 有 bug。
 

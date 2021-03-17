@@ -1,4 +1,4 @@
-#include "encoding.h"
+#include "hdw/internal/encoding.h"
 
 uint32_t big_endian_uint32(const uint8_t buf[])
 {

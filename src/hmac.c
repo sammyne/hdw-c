@@ -1,4 +1,4 @@
-#include "hmac.h"
+#include "hdw/internal/hmac.h"
 
 #include <mbedtls/md.h>
 

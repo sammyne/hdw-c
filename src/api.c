@@ -1,12 +1,12 @@
-#include "api.h"
+#include "hdw/api.h"
 
 #include <string.h>
 
-#include "curve.h"
-#include "encoding.h"
-#include "errors.h"
-#include "hmac.h"
-#include "math.h"
+#include "hdw/errors.h"
+#include "hdw/internal/curve.h"
+#include "hdw/internal/encoding.h"
+#include "hdw/internal/hmac.h"
+#include "hdw/internal/math.h"
 
 //using curve::Group;
 //using curve::LEN_PUBKEY;
@@ -91,7 +91,7 @@ int bip32_privkey_child(PrivKey *child, const PrivKey *parent, uint32_t idx)
   else
   {
     data[0] = 0;
-    mempcpy(data + 1, parent->priv, 32);
+    memcpy(data + 1, parent->priv, 32);
   }
 
   big_endian_put_uint32(data + LEN_PUBKEY, idx);

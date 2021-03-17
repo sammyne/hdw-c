@@ -1,4 +1,4 @@
-#include "curve.h"
+#include "hdw/internal/curve.h"
 
 const int LEN_PUBKEY = 33;
 

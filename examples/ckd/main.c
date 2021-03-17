@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "api.h"
+#include "hdw/api.h"
 
 void hexlify(const uint8_t *buf, int buf_len);
 
@@ -38,7 +38,7 @@ int main()
 
 void hexlify(const uint8_t *buf, int buf_len)
 {
-  for (auto i = 0; i < buf_len; i++)
+  for (int i = 0; i < buf_len; i++)
   {
     printf("%02x", buf[i]);
   }

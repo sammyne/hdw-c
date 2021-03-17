@@ -7,6 +7,7 @@ A mini  hierarchical deterministic wallets capable of deriving private keys only
 
 ## 快速开始
 
+### 基于 CMake
 ```bash
 rm -rf build
 mkdir build
@@ -20,6 +21,14 @@ make -j
 ```
 
 最后会在 build/src 目录产出 libhdw.a 静态库文件。
+
+### 基于 GNU Make
+
+```bash
+make -j
+```
+
+最后会在 _build 目录产出 libhdw.a 静态库文件以及说明 API 的头文件夹 include。
 
 ## 项目介绍
 

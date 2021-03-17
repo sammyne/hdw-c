@@ -2,8 +2,8 @@
 
 #include <mbedtls/ecp.h>
 
-#include "api.h"
-#include "math.h"
+#include "hdw/api.h"
+#include "hdw/internal/math.h"
 
 extern const int LEN_PUBKEY;
 

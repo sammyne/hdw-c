@@ -1,4 +1,4 @@
-#include "math.h"
+#include "hdw/internal/math.h"
 
 //pair<BigInt, int> big_int_new(const uint8_t d[32])
 int math_big_int_new(mbedtls_mpi *out, const uint8_t d[32])

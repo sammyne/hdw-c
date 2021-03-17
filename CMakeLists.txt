@@ -10,10 +10,8 @@ include(FetchContent)
 include(cmake/vendor.cmake)
 
 include_directories(${mbedtlsDir}/include)
-link_directories(${mbedtlsBinDir}/library)
 
-include_directories(${PROJECT_SOURCE_DIR}/include/hdw)
-include_directories(${PROJECT_SOURCE_DIR}/include/internal)
+include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_subdirectory(src)
 

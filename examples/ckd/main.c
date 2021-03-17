@@ -1,8 +1,6 @@
-#include <iostream>
+#include <stdio.h>
 
 #include "api.h"
-
-using namespace std;
 
 void hexlify(const uint8_t *buf, int buf_len);
 
@@ -14,23 +12,25 @@ void hexlify(const uint8_t *buf, int buf_len);
 int main()
 {
   const int SEED_LEN = 64;
-
+  const CURVE curve = secp256k1;
   uint8_t seed[SEED_LEN];
+  PrivKey priv;
+  int err;
+
   for (int i = 0; i < SEED_LEN; i++)
   {
     seed[i] = i;
   }
   hexlify(seed, SEED_LEN);
 
-  PrivKey priv;
-
-  if (auto err = bip32_new_master_key(&priv, seed, SEED_LEN); err)
+  err = bip32_new_master_key(&priv, seed, SEED_LEN, curve);
+  if (err)
   {
-    cout << "bip32_new_master_key failed: " << err << endl;
+    printf("bip32_new_master_key failed: %d\n", err);
     return -1;
   }
 
-  cout << "master private key = ";
+  printf("master private key = ");
   hexlify(priv.priv, 32);
 
   return 0;

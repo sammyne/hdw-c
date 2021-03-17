@@ -12,11 +12,14 @@ rm -rf build
 mkdir build
 cd build
 
-# 包含测试
-cmake -DENABLE_TESTING=1 ..
+#    WITH_TEST=1 指示包含测试
+# WITH_EXAMPLE=1 指示包含示例程序
+cmake -DWITH_EXAMPLE=1 -DWITH_TEST=1 ..
 
 make -j
 ```
+
+最后会在 build/src 目录产出 libhdw.a 静态库文件。
 
 ## 项目介绍
 

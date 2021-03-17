@@ -1,15 +1,9 @@
 #pragma once
 
-#include <cstdint>
-#include <memory>
+#include <stdint.h>
 
 #include <mbedtls/bignum.h>
 
-namespace math
-{
-  using BigInt = std::shared_ptr<mbedtls_mpi>;
+int math_big_int_new(mbedtls_mpi *out, const uint8_t d[32]);
 
-  std::pair<BigInt, int> big_int_new(const uint8_t d[32] = nullptr);
-
-  int big_int_serialize(uint8_t out[32], const BigInt &x);
-}
+int math_big_int_serialize(uint8_t out[32], const mbedtls_mpi *x);

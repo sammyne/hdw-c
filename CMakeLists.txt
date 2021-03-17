@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(hdwallet-c CXX)
+project(hdw-c C)
 
 option(ENABLE_TESTING "enable testing" Off)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 11)
 
 include(FetchContent)
 include(cmake/vendor.cmake)
@@ -17,9 +17,11 @@ include_directories(${PROJECT_SOURCE_DIR}/include/internal)
 
 add_subdirectory(src)
 
-add_subdirectory(examples)
+if(WITH_EXAMPLE)
+  add_subdirectory(examples)
+endif()
 
-if(ENABLE_TESTING) 
+if(WITH_TEST) 
   add_subdirectory(tests)
 endif()
 

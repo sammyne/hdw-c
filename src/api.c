@@ -1,6 +1,6 @@
 #include "api.h"
 
-#include <cstring>
+#include <string.h>
 
 #include "curve.h"
 #include "encoding.h"
@@ -8,9 +8,9 @@
 #include "hmac.h"
 #include "math.h"
 
-using curve::Group;
-using curve::LEN_PUBKEY;
-using math::BigInt;
+//using curve::Group;
+//using curve::LEN_PUBKEY;
+//using math::BigInt;
 
 const uint32_t SEED_LEN_MIN = 16;
 const uint32_t SEED_LEN_MAX = 64;
@@ -28,28 +28,33 @@ int bip32_harden_index(uint32_t idx)
 // bip32_new_master_key 根据长度为 seed_len 的种子 seed 创建一个新的根私钥 priv。
 int bip32_new_master_key(PrivKey *priv, const uint8_t *seed, uint32_t seed_len, CURVE curve)
 {
+  int err;
   uint8_t I[64];
-  {
-    vector<uint8_t> key(MASTER_HMAC_KEY, MASTER_HMAC_KEY + sizeof(MASTER_HMAC_KEY) - 1);
-    vector<uint8_t> _seed(seed, seed + seed_len);
+  mbedtls_ecp_group grp;
+  mbedtls_mpi d;
 
-    if (auto err = hmac512(I, key, _seed); err)
-    {
-      return err;
-    }
+  err = hmac512(I, MASTER_HMAC_KEY, sizeof(MASTER_HMAC_KEY) - 1, seed, seed_len);
+  if (err)
+  {
+    goto exit;
   }
 
-  if (auto [grp, err] = curve::new_group(curve); err)
+  err = curve_new_group(&grp, curve);
+  if (err)
   {
-    return err;
+    goto exit;
   }
-  else if (auto [d, err] = curve::to_usable_api(grp, I); err)
+
+  err = curve_to_usable_api(&d, &grp, I);
+  if (err)
   {
-    return err;
+    goto exit;
   }
-  else if (auto err = curve::derive_compressed_public_key(priv->pub, grp, d); err)
+
+  err = curve_derive_compressed_public_key(priv->pub, &grp, &d);
+  if (err)
   {
-    return err;
+    goto exit;
   }
 
   memcpy(priv->priv, I, 32);
@@ -58,18 +63,27 @@ int bip32_new_master_key(PrivKey *priv, const uint8_t *seed, uint32_t seed_len, 
   priv->index = 0;
   priv->curve = curve;
 
-  return 0;
+exit:
+  mbedtls_ecp_group_free(&grp);
+  mbedtls_mpi_free(&d);
+
+  return err;
 }
 
 // bip32_privkey_child 派生 parent 索引为 idx 的链路上子私钥 child。
 int bip32_privkey_child(PrivKey *child, const PrivKey *parent, uint32_t idx)
 {
+  int err;
+  uint8_t data[LEN_PUBKEY + LEN_CHILD_INDEX];
+  uint8_t I[64];
+  mbedtls_ecp_group grp;
+  mbedtls_mpi z, priv, child_priv;
+
   if (parent->depth == 255)
   {
     return ERR_DERIVE_TOO_DEEP;
   }
 
-  uint8_t data[LEN_PUBKEY + LEN_CHILD_INDEX];
   if (idx < HARDENED_KEY_START)
   {
     memcpy(data, parent->pub, LEN_PUBKEY);
@@ -82,44 +96,40 @@ int bip32_privkey_child(PrivKey *child, const PrivKey *parent, uint32_t idx)
 
   big_endian_put_uint32(data + LEN_PUBKEY, idx);
 
-  uint8_t I[64];
-  {
-    // TODO: optimise memory copy
-    // TODO: make chain code length constant
-    vector<uint8_t> key(parent->chain_code, parent->chain_code + 32);
-    vector<uint8_t> _data(data, data + LEN_PUBKEY + LEN_CHILD_INDEX);
-    if (auto err = hmac512(I, key, _data); err)
-    {
-      return err;
-    }
-  }
-
-  auto [grp, err] = curve::new_group(parent->curve);
+  err = hmac512(I, parent->chain_code, 32, data, LEN_PUBKEY + LEN_CHILD_INDEX);
   if (err)
   {
-    return err;
+    goto exit;
   }
 
-  auto [z, err2] = curve::to_usable_api(grp, I);
-  if (err2)
+  err = curve_new_group(&grp, parent->curve);
+  if (err)
   {
-    return err2;
+    goto exit;
   }
 
-  auto [d, err3] = math::big_int_new(parent->priv);
-  if (err3)
+  err = curve_to_usable_api(&z, &grp, I);
+  if (err)
   {
-    return err3;
+    goto exit;
   }
 
-  auto [dd, err4] = curve::add(grp, z, d);
-  if (err4)
+  err = math_big_int_new(&priv, parent->priv);
+  if (err)
   {
-    return err4;
+    goto exit;
   }
-  else if (auto err = math::big_int_serialize(child->priv, dd); err)
+
+  err = curve_add(&child_priv, &grp, &z, &priv);
+  if (err)
   {
-    return err;
+    goto exit;
+  }
+
+  err = math_big_int_serialize(child->priv, &child_priv);
+  if (err)
+  {
+    goto exit;
   }
 
   child->curve = parent->curve;
@@ -127,25 +137,36 @@ int bip32_privkey_child(PrivKey *child, const PrivKey *parent, uint32_t idx)
   child->index = idx;
   memcpy(child->chain_code, I + 32, 32);
 
-  if (auto err = curve::derive_compressed_public_key(child->pub, grp, dd); err)
+  err = curve_derive_compressed_public_key(child->pub, &grp, &child_priv);
+  if (err)
   {
-    return err;
+    goto exit;
   }
 
-  return 0;
+exit:
+  mbedtls_ecp_group_free(&grp);
+  mbedtls_mpi_free(&z);
+  mbedtls_mpi_free(&priv);
+  mbedtls_mpi_free(&child_priv);
+
+  return err;
 }
 
 // bip32_privkey_deserialize 从 bip32_privkey_serialize 序列化的二进制数据还原私钥。
 int bip32_privkey_deserialize(PrivKey *priv, const uint8_t buf[70])
 {
+  int err;
   int o = 0;
+  mbedtls_ecp_group grp;
+  mbedtls_mpi d;
+  CURVE curve = (CURVE)(buf[o]);
 
-  auto curve = CURVE(buf[o]);
-  auto [grp, err] = curve::new_group(curve);
+  err = curve_new_group(&grp, curve);
   if (err)
   {
-    return err;
+    goto exit;
   }
+
   priv->curve = curve;
   o++;
 
@@ -161,13 +182,23 @@ int bip32_privkey_deserialize(PrivKey *priv, const uint8_t buf[70])
   memcpy(priv->priv, buf + o, 32);
   o += 32;
 
-  auto [d, err2] = math::big_int_new(priv->priv);
-  if (err2)
+  err = math_big_int_new(&d, priv->priv);
+  if (err)
   {
-    return err2;
+    goto exit;
   }
 
-  return curve::derive_compressed_public_key(priv->pub, grp, d);
+  err = curve_derive_compressed_public_key(priv->pub, &grp, &d);
+  if (err)
+  {
+    goto exit;
+  }
+
+exit:
+  mbedtls_ecp_group_free(&grp);
+  mbedtls_mpi_free(&d);
+
+  return err;
 }
 
 // bip32_privkey_serialize 序列化 priv 为二进制形式，以便于存储。
@@ -175,7 +206,7 @@ void bip32_privkey_serialize(uint8_t buf[70], const PrivKey *priv)
 {
   int o = 0; // offset
 
-  buf[o] = uint8_t(priv->curve);
+  buf[o] = (uint8_t)(priv->curve);
   o++;
 
   buf[o] = priv->depth;

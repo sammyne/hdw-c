@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdint>
+#include <stdint.h>
 
 uint32_t big_endian_uint32(const uint8_t out[]);
 

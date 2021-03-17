@@ -1,8 +1,6 @@
 #pragma once
 
-#include <cstdint>
-#include <vector>
+#include <stdint.h>
 
-using std::vector;
-
-int hmac512(uint8_t md[64], const vector<uint8_t> &key, const vector<uint8_t> &msg);
+int hmac512(
+    uint8_t md[64], const uint8_t *key, int key_len, const uint8_t *data, int data_len);

@@ -26,6 +26,9 @@ make -j
 
 ```bash
 make -j
+
+# 运行示例程序
+make ckd
 ```
 
 最后会在 _build 目录产出 libhdw.a 静态库文件以及说明 API 的头文件夹 include。
